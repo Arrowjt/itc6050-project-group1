@@ -1,0 +1,21 @@
+# Ingestion
+dlt[postgres]>=1.0.0
+requests>=2.31.0
+
+# Database driver
+psycopg2-binary>=2.9.9
+
+# Environment
+python-dotenv>=1.0.0
+
+# Transformation (Track B)
+dbt-core>=1.8.0
+dbt-postgres>=1.8.0
+
+# Dashboard (Track C)
+streamlit>=1.35.0
+pandas>=2.2.0
+plotly>=5.20.0
+
+# Utilities
+sqlalchemy>=2.0.0
