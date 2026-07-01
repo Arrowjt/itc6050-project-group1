@@ -1,0 +1,44 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# dlt
+.dlt/
+_dlt_pipeline_state/
+
+# dbt
+target/
+dbt_packages/
+logs/
+.user.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data dumps (shared via Google Drive, not Git)
+*.sql.gz
+*.dump
+*.pg_dump
+dumps/
+
+# Streamlit
+.streamlit/secrets.toml
