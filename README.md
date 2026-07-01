@@ -2,7 +2,7 @@
 
 End-to-end data pipeline ingesting air quality measurements from the OpenAQ API, transforming them with dbt, and visualising results in Streamlit.
 
-Course project for ITC 6050 Data Engineering, Spring 2026, Deree — The American College of Greece. Instructor: Dr. Maira Kotsovoulou. Submission: 21 July 2026.
+Course project for ITC 6050 Data Engineering, Spring 2026, Deree — The American College of Greece. Instructor: Dr. Maira Kotsovoulou. 
 
 ## Team
 
@@ -17,9 +17,28 @@ Course project for ITC 6050 Data Engineering, Spring 2026, Deree — The America
 - **Transformation:** dbt (dbt-postgres)
 - **Dashboard:** Streamlit
 - **Orchestration:** Docker Compose
-- **Enrichment:** Open-Meteo weather API (stretch goal)
 
 ## Repository structure
+
+```
+itc6050-project-group1/
+├── pipeline.py              # dlt ingestion script
+├── dashboard.py             # Streamlit dashboard
+├── requirements.txt         # Python dependencies
+├── docker-compose.yml       # Full stack (Postgres + dbt + Streamlit)
+├── .env.example             # Template for environment variables
+├── analytics/               # dbt project
+│   ├── models/
+│   │   ├── sources.yml
+│   │   ├── schema.yml
+│   │   ├── stg_air_quality.sql
+│   │   └── city_daily_avg.sql
+│   └── dbt_project.yml
+└── docs/                    # Architecture diagram, screenshots
+```
+
+
+
 ## Setup (local development)
 
 Instructions will be added as the project develops. For now:
