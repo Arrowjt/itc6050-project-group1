@@ -1,0 +1,42 @@
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Environment
+.env
+.env.local
+
+# dlt/dbt state
+.dlt/
+target/
+dbt_packages/
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Docs and data
+docs/
+dumps/
+*.pdf
+*.sql.gz
+*.dump
+
+# Docker itself
+Dockerfile
+docker-compose.yml
+.dockerignore

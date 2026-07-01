@@ -1,0 +1,97 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: aq_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - aq_network
+
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aq_pipeline
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST_DOCKER}
+      POSTGRES_PORT: ${POSTGRES_PORT_DOCKER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["python", "pipeline.py"]
+    networks:
+      - aq_network
+    profiles:
+      - manual
+
+  dbt:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aq_dbt
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST_DOCKER}
+      POSTGRES_PORT: ${POSTGRES_PORT_DOCKER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./analytics:/app/analytics
+    working_dir: /app/analytics
+    entrypoint: ["dbt"]
+    networks:
+      - aq_network
+    profiles:
+      - manual
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aq_dashboard
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST_DOCKER}
+      POSTGRES_PORT: ${POSTGRES_PORT_DOCKER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["streamlit", "run", "dashboard.py", "--server.address=0.0.0.0"]
+    networks:
+      - aq_network
+
+volumes:
+  postgres_data:
+
+networks:
+  aq_network:
+    driver: bridge
