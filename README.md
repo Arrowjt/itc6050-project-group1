@@ -23,6 +23,7 @@ Everything runs in Docker containers, so you do not need to install Python, Post
 
 ## Prerequisites
 
+- **OpenAQ API key** — free, register at https://explore.openaq.org/register. You'll need this before running the pipeline.
 - **Docker Desktop** — https://www.docker.com/products/docker-desktop
   - macOS: install and launch. That's it.
   - Windows: install with the WSL2 backend enabled. Follow the Docker install wizard prompts.
@@ -107,8 +108,7 @@ itc6050-project-group1/
 ​```
 ## Data sources
 
-- **OpenAQ API** — https://docs.openaq.org (no authentication required)
-- **Open-Meteo API** — https://open-meteo.com (no authentication required)
+- **OpenAQ API v3** — https://docs.openaq.org (free API key required, register at https://explore.openaq.org/register)
 
 ## Troubleshooting
 
