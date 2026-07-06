@@ -47,3 +47,6 @@ dumps/
 scripts/capitals_report.csv
 pipeline_run.log
 *.log
+
+# Pipeline checkpoint state
+.pipeline_state/

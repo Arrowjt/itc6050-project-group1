@@ -12,9 +12,10 @@ without duplicating history.
 """
 
 import os
+import json
 import time
 from datetime import datetime, timezone, timedelta
-from typing import Iterator, Dict, Any, List, Optional
+from typing import Iterator, Dict, Any, List, Optional, Set
 
 import dlt
 import requests
@@ -100,7 +101,34 @@ def _get(session: requests.Session, url: str, params: Optional[dict] = None,
         return resp.json()
 
     raise requests.HTTPError(f"Max retries exceeded for {url}")
+# ----------------------------------------------------------------------
+# Checkpoint state — track completed sensors so restarts skip them
+# ----------------------------------------------------------------------
 
+STATE_DIR = "/app/.pipeline_state"
+STATE_FILE = os.path.join(STATE_DIR, "completed_sensors.json")
+
+
+def _load_completed_sensors() -> Set[int]:
+    """Load the set of sensor IDs that finished in a prior run."""
+    if not os.path.exists(STATE_FILE):
+        return set()
+    try:
+        with open(STATE_FILE, "r") as f:
+            return set(json.load(f))
+    except Exception as e:
+        print(f"  Warning: could not read state file: {e}")
+        return set()
+
+
+def _mark_sensor_completed(sensor_id: int, completed: Set[int]) -> None:
+    """Add sensor to completed set and flush to disk."""
+    completed.add(sensor_id)
+    os.makedirs(STATE_DIR, exist_ok=True)
+    tmp = STATE_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(sorted(completed), f)
+    os.replace(tmp, STATE_FILE)  # atomic on POSIX
 
 # ----------------------------------------------------------------------
 # Capitals loader (from static CSV committed alongside the pipeline)
@@ -267,11 +295,15 @@ def measurements_resource() -> Iterator[Dict[str, Any]]:
         for s in (loc.get("sensors") or [])
     ]
     total = len(sensor_ids)
-    print(f"Fetching measurements for {total} sensors (window: {WINDOW_DAYS} days)...")
+    completed = _load_completed_sensors()
+    if completed:
+        print(f"Resuming: {len(completed)} sensors already completed from previous run")
+    remaining = [s for s in sensor_ids if s not in completed]
+    print(f"Fetching measurements for {len(remaining)} sensors ({total} total, window: {WINDOW_DAYS} days)...")
 
     now_utc = datetime.now(timezone.utc).isoformat()
     failed_sensors = []
-    for i, sensor_id in enumerate(sensor_ids, start=1):
+    for i, sensor_id in enumerate(remaining, start=1):
         page = 1
         page_count = 0
         try:
@@ -316,9 +348,10 @@ def measurements_resource() -> Iterator[Dict[str, Any]]:
             failed_sensors.append((sensor_id, str(e)))
             print(f"  sensor {sensor_id} skipped after retries: {e}")
             continue
-        if i % 20 == 0 or i == total:
-            print(f"  [{i:4d}/{total}] sensor {sensor_id} -> {page_count} rows")
-
+        _mark_sensor_completed(sensor_id, completed)
+        if i % 20 == 0 or i == len(remaining):
+            print(f"  [{i:4d}/{len(remaining)}] sensor {sensor_id} -> {page_count} rows")
+            
     if failed_sensors:
         print(f"\n  Skipped {len(failed_sensors)} sensors due to unrecoverable errors:")
         for sid, err in failed_sensors[:10]:
