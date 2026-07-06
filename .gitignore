@@ -45,3 +45,5 @@ dumps/
 
 # Generated exploration outputs
 scripts/capitals_report.csv
+pipeline_run.log
+*.log
