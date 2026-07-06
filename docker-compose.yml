@@ -34,6 +34,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      OPENAQ_API_KEY: ${OPENAQ_API_KEY}
+      RESTCOUNTRIES_API_KEY: ${RESTCOUNTRIES_API_KEY}
     volumes:
       - .:/app
     working_dir: /app
@@ -57,6 +59,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      OPENAQ_API_KEY: ${OPENAQ_API_KEY}
+      RESTCOUNTRIES_API_KEY: ${RESTCOUNTRIES_API_KEY}
     volumes:
       - ./analytics:/app/analytics
     working_dir: /app/analytics
@@ -80,6 +84,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      OPENAQ_API_KEY: ${OPENAQ_API_KEY}
+      RESTCOUNTRIES_API_KEY: ${RESTCOUNTRIES_API_KEY}
     ports:
       - "8501:8501"
     volumes:

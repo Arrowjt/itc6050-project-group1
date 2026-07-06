@@ -26,6 +26,7 @@ from sources.openaq import (
     sensors_resource,
     measurements_resource,
 )
+from sources.restcountries import countries_resource
 
 # Load .env when running locally. Inside the container, env vars are
 # already injected by docker compose, so load_dotenv is a no-op.
@@ -67,6 +68,7 @@ def main() -> int:
 
     info = pipeline.run(
         [
+            countries_resource(),
             locations_resource(),
             sensors_resource(),
             measurements_resource(),

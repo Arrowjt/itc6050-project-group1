@@ -108,20 +108,16 @@ def _get(session: requests.Session, url: str, params: Optional[dict] = None,
 
 def _load_capitals() -> List[Dict[str, Any]]:
     """
-    Load capitals from scripts/capitals.csv.
-    Returns [{country, cca2, capital, lat, lon}, ...].
+    Load capitals from REST Countries v5 via sources.restcountries.
     Applies CAPITALS_FILTER first, then CAPITALS_LIMIT.
     """
-    here = os.path.dirname(os.path.abspath(__file__))
-    csv_path = os.path.join(here, "..", "scripts", "capitals.csv")
-    df = pd.read_csv(csv_path)
-    caps = df.to_dict(orient="records")
+    from .restcountries import get_capitals_for_openaq
+    caps = get_capitals_for_openaq()
     if CAPITALS_FILTER:
         caps = [c for c in caps if c["cca2"] in CAPITALS_FILTER]
     if CAPITALS_LIMIT > 0:
         caps = caps[:CAPITALS_LIMIT]
     return caps
-
 
 def _bbox(lat: float, lon: float) -> str:
     """Return a bounding box string: min_lon,min_lat,max_lon,max_lat."""
