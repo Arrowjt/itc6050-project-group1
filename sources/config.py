@@ -41,7 +41,6 @@ MEASUREMENTS_PAGE_SIZE = 1000
 # Rate limiting — polite pause between API calls.
 # OpenAQ's stated limit is "generous" but not documented as a specific rate.
 # 100ms = 10 req/sec, safely under any reasonable cap.
-POLITE_SLEEP_SECONDS = 1.0  # OpenAQ free tier: ~60 req/min
-
+POLITE_SLEEP_SECONDS = 1.5  # OpenAQ free tier: 60 req/min, using ~40 req/min for safety margin
 # Request timeouts
 HTTP_TIMEOUT_SECONDS = 60

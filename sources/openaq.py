@@ -2,9 +2,9 @@
 OpenAQ v3 dlt resources for the air quality pipeline.
 
 Three resources:
-  - locations:    monitoring stations near each capital (bbox query)
-  - sensors:      extracted inline from the locations response (no extra calls)
-  - measurements: hourly readings per sensor, over the last WINDOW_DAYS
+  - locations:         monitoring stations near each capital (bbox query)
+  - sensors:           extracted inline from the locations response (no extra calls)
+  - measurements_daily: daily average per sensor (/days endpoint), over WINDOW_DAYS
 
 All resources use write_disposition="merge" with a primary key,
 so re-running the pipeline appends new data and updates changed rows
@@ -271,13 +271,15 @@ def sensors_resource() -> Iterator[Dict[str, Any]]:
 
 
 @dlt.resource(
-    name="measurements",
+    name="measurements_daily",
     write_disposition="merge",
-    primary_key=["sensor_id", "datetime_from_utc"],
+    primary_key=["sensor_id", "date_utc"],
 )
 def measurements_resource() -> Iterator[Dict[str, Any]]:
     """
-    Fetch hourly measurements for every sensor in the run.
+    Fetch daily-average measurements for every sensor in the run using the
+    OpenAQ /days endpoint. Each row is one sensor-day with the daily mean
+    plus summary stats and coverage (for the 75% completeness rule).
     Filters to the last WINDOW_DAYS. Injects sensor_id into each row.
     """
     raw = getattr(locations_resource, "raw_locations", None)
@@ -299,7 +301,7 @@ def measurements_resource() -> Iterator[Dict[str, Any]]:
     if completed:
         print(f"Resuming: {len(completed)} sensors already completed from previous run")
     remaining = [s for s in sensor_ids if s not in completed]
-    print(f"Fetching measurements for {len(remaining)} sensors ({total} total, window: {WINDOW_DAYS} days)...")
+    print(f"Fetching daily measurements for {len(remaining)} sensors ({total} total, window: {WINDOW_DAYS} days)...")
 
     now_utc = datetime.now(timezone.utc).isoformat()
     failed_sensors = []
@@ -308,7 +310,7 @@ def measurements_resource() -> Iterator[Dict[str, Any]]:
         page_count = 0
         try:
             while True:
-                url = f"{OPENAQ_BASE}/sensors/{sensor_id}/measurements"
+                url = f"{OPENAQ_BASE}/sensors/{sensor_id}/days"
                 params = {
                     "datetime_from": date_from,
                     "datetime_to": date_to,
@@ -324,20 +326,25 @@ def measurements_resource() -> Iterator[Dict[str, Any]]:
                     dtf = period.get("datetimeFrom") or {}
                     dtt = period.get("datetimeTo") or {}
                     param = m.get("parameter") or {}
-                    flag = m.get("flagInfo") or {}
                     coverage = m.get("coverage") or {}
+                    summary = m.get("summary") or {}
                     yield {
                         "sensor_id": sensor_id,
-                        "datetime_from_utc": dtf.get("utc"),
+                        "date_utc": dtf.get("utc"),
+                        "date_local": dtf.get("local"),
                         "datetime_to_utc": dtt.get("utc"),
-                        "value": m.get("value"),
+                        "value_avg": m.get("value"),
+                        "value_min": summary.get("min"),
+                        "value_max": summary.get("max"),
+                        "value_median": summary.get("median"),
+                        "value_sd": summary.get("sd"),
                         "parameter_id": param.get("id"),
                         "parameter_name": param.get("name"),
                         "parameter_units": param.get("units"),
-                        "has_flags": flag.get("hasFlags"),
+                        "expected_count": coverage.get("expectedCount"),
+                        "observed_count": coverage.get("observedCount"),
                         "percent_complete": coverage.get("percentComplete"),
                         "period_label": period.get("label"),
-                        "period_interval": period.get("interval"),
                         "ingested_at": now_utc,
                     }
                 page_count += len(results)
@@ -351,7 +358,7 @@ def measurements_resource() -> Iterator[Dict[str, Any]]:
         _mark_sensor_completed(sensor_id, completed)
         if i % 20 == 0 or i == len(remaining):
             print(f"  [{i:4d}/{len(remaining)}] sensor {sensor_id} -> {page_count} rows")
-            
+
     if failed_sensors:
         print(f"\n  Skipped {len(failed_sensors)} sensors due to unrecoverable errors:")
         for sid, err in failed_sensors[:10]:
