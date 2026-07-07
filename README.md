@@ -75,14 +75,58 @@ If you want to browse the data with a GUI:
 
 ## Working with the shared data snapshot
 
-For development, we work from a frozen snapshot of the OpenAQ data so everyone gets identical results in dbt tests and dashboard screenshots. The pipeline itself supports incremental refresh — you can `make pipeline` any time to pull fresh data.
+The pipeline takes several hours to run against the OpenAQ API, so you don't need to run it yourself. Instead, restore the shared database snapshot — everyone works from the same ~7 million rows of daily air quality data across 85 capitals (2016–2026).
 
-To restore the shared snapshot (link in the team Google Drive folder):
+The snapshot (`air_quality_raw.dump`, ~293 MB) is in the team Google Drive folder.
+
+### Restore steps
+
+1. Make sure the stack is running with an empty database:
+
+   ```bash
+   make setup
+   make up
+   ```
+
+2. Download `air_quality_raw.dump` from the team Google Drive into the project folder.
+
+3. Copy the dump into the Postgres container and restore it:
+
+   ```bash
+   docker compose cp ./air_quality_raw.dump postgres:/tmp/air_quality_raw.dump
+   docker compose exec -T postgres pg_restore -U postgres -d air_quality \
+     --no-owner --clean --if-exists /tmp/air_quality_raw.dump
+   ```
+
+4. Verify the restore (should return 7084417):
+
+   ```bash
+   docker compose exec postgres psql -U postgres -d air_quality \
+     -c "SELECT COUNT(*) FROM raw.measurements_daily;"
+   ```
+
+The `--clean --if-exists` flags make the restore safe to re-run — it drops and recreates objects rather than erroring if they already exist.
+
+### What's in the snapshot
+
+The `raw` schema, four tables:
+
+- `raw.countries` — country + capital metadata from REST Countries
+- `raw.locations` — ~2,170 active monitoring stations near the 85 capitals
+- `raw.sensors` — ~9,600 sensors (one per station-parameter pair)
+- `raw.measurements_daily` — ~7.08M daily-average readings
+
+See `docs/DATA_QUALITY_NOTES.md` for known data quality issues (mixed units, completeness, nulls) that the dbt staging layer needs to handle.
+
+### Refreshing the data (optional)
+
+If you want to pull fresh data from the API instead of restoring the snapshot:
 
 ```bash
-# After downloading raw_snapshot.sql.gz to your machine
-gunzip -c raw_snapshot.sql.gz | docker compose exec -T postgres psql -U postgres -d air_quality
+make pipeline
 ```
+
+This runs the full ingestion (several hours). It supports incremental re-runs — already-loaded rows are skipped via merge, and completed sensors are tracked in `.pipeline_state/` so an interrupted run resumes where it left off.
 
 ## Repository structure
 ## Repository structure
