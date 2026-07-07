@@ -12,41 +12,38 @@ Course project for ITC 6050 Data Engineering, Spring 2026, Deree — The America
 
 ## Stack
 
-- **Ingestion:** dlt
+- **Ingestion:** dlt (OpenAQ v3 + REST Countries v5)
 - **Storage:** PostgreSQL 16
 - **Transformation:** dbt (dbt-postgres)
 - **Dashboard:** Streamlit
 - **Orchestration:** Docker Compose
-- **Enrichment:** Open-Meteo weather API (stretch goal)
 
 Everything runs in Docker containers, so you do not need to install Python, Postgres, dbt, or Streamlit on your machine. You only need Docker Desktop.
 
 ## Prerequisites
 
-- **OpenAQ API key** — free, register at https://explore.openaq.org/register. You'll need this before running the pipeline.
 - **Docker Desktop** — https://www.docker.com/products/docker-desktop
   - macOS: install and launch. That's it.
   - Windows: install with the WSL2 backend enabled. Follow the Docker install wizard prompts.
 - **Git** — https://git-scm.com
 - **Make** — preinstalled on macOS and most Linux. On Windows, install via `choco install make` or use WSL2.
 
-Optional (recommended for inspecting the database):
-- **DBeaver Community** — https://dbeaver.io/download/
+Optional:
+- **DBeaver Community** — https://dbeaver.io/download/ (for browsing the database with a GUI)
+- **API keys** — only needed if you want to *refresh* the data from the APIs yourself (see "Refreshing the data"). For normal work you restore the shared snapshot and need no keys.
 
 ## Quick start
 
-Five commands from a fresh clone to a running dashboard.
+The pipeline takes several hours to run against the API, so you don't run it — you restore a shared database snapshot instead. Everyone works from the same ~7 million rows.
 
 ```bash
 git clone https://github.com/Arrowjt/itc6050-project-group1.git
 cd itc6050-project-group1
 make setup       # Creates .env from template and builds Docker images (~5 min first time)
-make up          # Starts Postgres and Streamlit dashboard in the background
-make pipeline    # Runs the ingestion pipeline (populates the raw schema)
-make dbt-run     # Builds the transformation models
+make up          # Starts Postgres and the Streamlit dashboard
 ```
 
-Then open the dashboard: http://localhost:8501
+Then restore the shared data snapshot (see "Working with the shared data snapshot" below), and you're ready to build dbt models and the dashboard.
 
 ## Everyday commands
 
@@ -56,11 +53,11 @@ Run `make` (or `make help`) to see all available commands. The most common:
 |---|---|
 | `make up` | Start Postgres and dashboard |
 | `make down` | Stop everything (data persists) |
-| `make pipeline` | Refresh raw data from OpenAQ |
 | `make dbt-run` | Rebuild the transformed models |
 | `make dbt-test` | Run all data quality tests |
 | `make psql` | Open a SQL shell inside Postgres |
 | `make logs` | Watch container logs live |
+| `make pipeline` | Refresh raw data from the APIs (slow, needs API keys — usually not needed) |
 | `make clean` | Stop everything AND delete the database (use with caution) |
 
 ## Connecting DBeaver to the database
@@ -120,7 +117,12 @@ See `docs/DATA_QUALITY_NOTES.md` for known data quality issues (mixed units, com
 
 ### Refreshing the data (optional)
 
-If you want to pull fresh data from the API instead of restoring the snapshot:
+If you want to pull fresh data from the APIs instead of restoring the snapshot, you need free API keys:
+
+- **OpenAQ** — register at https://explore.openaq.org/register
+- **REST Countries v5** — register at https://restcountries.com/sign-up
+
+Put both in your `.env` (see `.env.example`), then:
 
 ```bash
 make pipeline
@@ -129,30 +131,42 @@ make pipeline
 This runs the full ingestion (several hours). It supports incremental re-runs — already-loaded rows are skipped via merge, and completed sensors are tracked in `.pipeline_state/` so an interrupted run resumes where it left off.
 
 ## Repository structure
-## Repository structure
 
-​```
+```
 itc6050-project-group1/
-├── pipeline.py              # dlt ingestion script
-├── dashboard.py             # Streamlit dashboard
-├── requirements.txt         # Python dependencies
-├── Dockerfile               # Shared image for pipeline/dbt/dashboard
-├── docker-compose.yml       # Full stack orchestration
-├── Makefile                 # One-command operations
-├── .env.example             # Template for environment variables
+├── pipeline.py                 # dlt ingestion entry point
+├── sources/                    # pipeline source modules
+│   ├── config.py               # tunable constants (window, pacing, bbox)
+│   ├── openaq.py               # OpenAQ resources: locations, sensors, measurements_daily
+│   └── restcountries.py        # REST Countries resource: countries + capitals
+├── scripts/                    # exploration / one-off scripts
+│   └── explore_capitals.py     # capital data-availability survey
 ├── db/
-│   └── init.sql             # Schemas created on first Postgres startup
-├── analytics/               # dbt project
-│   └── models/
-│       ├── sources.yml
-│       ├── schema.yml
-│       ├── stg_air_quality.sql
-│       └── city_daily_avg.sql
-└── docs/                    # Architecture diagram, screenshots
-​```
+│   └── init.sql                # schemas created on first Postgres startup
+├── docs/
+│   └── DATA_QUALITY_NOTES.md   # raw data quality findings for the dbt layer
+├── analytics/                  # dbt project (Track B — in progress)
+├── dashboard.py                # Streamlit dashboard (Track C — in progress)
+├── requirements.txt            # Python dependencies
+├── Dockerfile                  # shared image for pipeline/dbt/dashboard
+├── docker-compose.yml          # full stack orchestration
+├── Makefile                    # one-command operations
+└── .env.example                # template for environment variables
+```
+
+Note: `analytics/` and `dashboard.py` are placeholders until Tracks B and C build them.
+
 ## Data sources
 
-- **OpenAQ API v3** — https://docs.openaq.org (free API key required, register at https://explore.openaq.org/register)
+- **OpenAQ API v3** — https://docs.openaq.org (free API key, register at https://explore.openaq.org/register)
+- **REST Countries v5** — https://restcountries.com (free API key, register at https://restcountries.com/sign-up)
+
+API keys are only required to refresh data. Restoring the snapshot needs no keys.
+
+## Notes for developers
+
+- **dlt staging schema:** during a pipeline run, dlt creates a temporary `raw_staging` schema as working space. It's harmless and can be dropped (`DROP SCHEMA raw_staging CASCADE;`). The shared snapshot excludes it.
+- **Historical depth:** the OpenAQ `/days` endpoint returns each sensor's full history (2016–2026), not just a recent window. The raw layer keeps everything; window to a shorter period in dbt staging if needed (`WHERE date_utc >= '2024-01-01'`).
 
 ## Troubleshooting
 
@@ -162,7 +176,7 @@ itc6050-project-group1/
 
 **Windows: `make` command not found** — install Make via Chocolatey (`choco install make`) or run commands directly from the Makefile (e.g., `docker compose up -d postgres dashboard`).
 
-**Something broke and I want to start over** — `make clean` removes containers, networks, and the database volume. Then `make setup && make up`.
+**Something broke and I want to start over** — `make clean` removes containers, networks, and the database volume. Then `make setup && make up`, and restore the snapshot again.
 
 ## License
 
