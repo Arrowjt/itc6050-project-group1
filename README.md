@@ -7,8 +7,8 @@ Course project for ITC 6050 Data Engineering, Spring 2026, Deree — The America
 ## Team
 
 - Ioannis Tsantilas — Ingestion & Infrastructure
-- [Teammate B] — Transformation & Data Quality
-- [Teammate C] — Dashboard & Presentation
+- Milena Mirumyan — Transformation & Data Quality
+- Nikolaos Voudouris Bountouris — Dashboard & Presentation
 
 ## Stack
 
