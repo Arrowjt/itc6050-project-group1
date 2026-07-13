@@ -184,7 +184,15 @@ def _fetch_all_locations(session: requests.Session) -> List[Dict[str, Any]]:
             print(f"  [{i:3d}/{len(capitals)}] {cap['capital']:25s} skipped ({e})")
             continue
         results = payload.get("results", [])
-        active = [r for r in results if _is_active((r.get("datetimeLast") or {}).get("utc"))]
+        # Keep only stations that are (a) currently active and (b) actually in the
+        # capital's own country. The bounding box is geographic, so it can spill
+        # across borders — this drops stations that belong to a neighbouring country
+        # (e.g. Rome's stations falling inside the Vatican City box).
+        active = [
+            r for r in results
+            if _is_active((r.get("datetimeLast") or {}).get("utc"))
+            and (r.get("country") or {}).get("code") == cap["cca2"]
+        ]
         # tag each active location with which capital it belongs to
         for r in active:
             r["_capital_country"] = cap["country"]
