@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: city_daily_avg
+    description: "Daily average/max pollutant reading per city. Feeds the Streamlit dashboard."
+    columns:
+      - name: city
+        tests:
+          - not_null
+      - name: parameter
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['pm25', 'no2', 'co', 'o3', 'so2']
+      - name: avg_value
+        tests:
+          - not_null

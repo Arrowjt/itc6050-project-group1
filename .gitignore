@@ -50,3 +50,5 @@ pipeline_run.log
 
 # Pipeline checkpoint state
 .pipeline_state/
+analytics/target/
+analytics/logs/

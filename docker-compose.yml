@@ -36,6 +36,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       OPENAQ_API_KEY: ${OPENAQ_API_KEY}
       RESTCOUNTRIES_API_KEY: ${RESTCOUNTRIES_API_KEY}
+      DBT_PROFILES_DIR: /app/analytics 
     volumes:
       - .:/app
     working_dir: /app

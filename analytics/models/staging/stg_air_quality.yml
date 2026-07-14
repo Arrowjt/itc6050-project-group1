@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: stg_air_quality
+    description: "Cleaned daily air-quality readings, one row per sensor per day, all in µg/m³."
+    columns:
+      - name: measurement_id
+        description: "Surrogate key: md5(sensor_id + date_utc)."
+        tests:
+          - not_null
+          - unique
+
+      - name: city
+        tests:
+          - not_null
+
+      - name: parameter
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['pm25', 'no2', 'co', 'o3', 'so2']
+              
+
+      - name: value
+        tests:
+          - not_null
+          # the >= 0 check is the custom singular test in tests/assert_value_non_negative.sql
+          # (kept out of dbt_utils to avoid an extra package dependency)
