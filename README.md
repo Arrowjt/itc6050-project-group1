@@ -161,35 +161,35 @@ Note: `analytics/` and `dashboard.py` are placeholders until Tracks B and C buil
 The Streamlit dashboard lives on the `track-c-dashboard` branch. To view it:
 
 1. Fetch and checkout the branch:
-
+```bash
    git fetch origin
    git checkout track-c-dashboard
-
+```
 
 2. Build and start the stack (if not already running):
-
+```bash
    docker compose build
    docker compose up -d
-
+```
 
 3. Restore the shared data snapshot (see "Working with the shared data snapshot" above).
 
 4. Run dbt to build the analytics models:
-
+```bash
    docker compose run --rm dbt seed
    docker compose run --rm dbt run
-
+```
 
 5. Restart the dashboard container to pick up the latest code:
-
+```bash
    docker compose restart dashboard
+```
 
 6. Open your browser to: http://localhost:8501
 
 The dashboard includes: KPI summary, top 10 most polluted cities (bar chart),
 pollutant trend over time (line chart, selectable by city/pollutant), and a
 WHO PM2.5 alert table with country/date filters.
-
 ## Data sources
 
 - **OpenAQ API v3** — https://docs.openaq.org (free API key, register at https://explore.openaq.org/register)
