@@ -184,15 +184,7 @@ def _fetch_all_locations(session: requests.Session) -> List[Dict[str, Any]]:
             print(f"  [{i:3d}/{len(capitals)}] {cap['capital']:25s} skipped ({e})")
             continue
         results = payload.get("results", [])
-        # Keep only stations that are (a) currently active and (b) actually in the
-        # capital's own country. The bounding box is geographic, so it can spill
-        # across borders — this drops stations that belong to a neighbouring country
-        # (e.g. Rome's stations falling inside the Vatican City box).
-        active = [
-            r for r in results
-            if _is_active((r.get("datetimeLast") or {}).get("utc"))
-            and (r.get("country") or {}).get("code") == cap["cca2"]
-        ]
+        active = [r for r in results if _is_active((r.get("datetimeLast") or {}).get("utc"))]
         # tag each active location with which capital it belongs to
         for r in active:
             r["_capital_country"] = cap["country"]
@@ -366,7 +358,7 @@ def measurements_resource() -> Iterator[Dict[str, Any]]:
         _mark_sensor_completed(sensor_id, completed)
         if i % 20 == 0 or i == len(remaining):
             print(f"  [{i:4d}/{len(remaining)}] sensor {sensor_id} -> {page_count} rows")
-
+            
     if failed_sensors:
         print(f"\n  Skipped {len(failed_sensors)} sensors due to unrecoverable errors:")
         for sid, err in failed_sensors[:10]:
