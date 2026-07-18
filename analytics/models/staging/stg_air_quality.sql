@@ -108,9 +108,14 @@ cleaned as (
     from joined
     where
         value_avg >= 0
+        and value_avg < 10000  -- sensor over-range/saturation ceiling (raw value_avg=10000
         and percent_complete >= 75
-        and parameter in ('pm25', 'no2', 'co', 'o3', 'so2')
+        and parameter in ('pm25', 'pm10', 'no2', 'co', 'o3', 'so2')
         and city is not null
+        -- drop physically implausible raw readings before/after conversion:
+        -- gases in ppm/ppb above these bounds are mislabeled or sensor errors
+        and not (unit in ('ppm') and value_avg > 50)
+        and not (unit in ('ppb') and value_avg > 50000)
 
 )
 

@@ -358,7 +358,7 @@ def measurements_resource() -> Iterator[Dict[str, Any]]:
         _mark_sensor_completed(sensor_id, completed)
         if i % 20 == 0 or i == len(remaining):
             print(f"  [{i:4d}/{len(remaining)}] sensor {sensor_id} -> {page_count} rows")
-
+            
     if failed_sensors:
         print(f"\n  Skipped {len(failed_sensors)} sensors due to unrecoverable errors:")
         for sid, err in failed_sensors[:10]:
