@@ -52,3 +52,5 @@ pipeline_run.log
 .pipeline_state/
 analytics/target/
 analytics/logs/
+ITC6050_Final_Project_Brief.pdf
+*.duckdb
