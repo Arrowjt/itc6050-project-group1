@@ -1,0 +1,51 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: countries
+        description: "One row per country (REST Countries API)."
+        columns:
+          - name: country_name
+          - name: alpha_2
+          - name: capital_name
+          - name: capital_lat
+          - name: capital_lon
+          - name: region
+          - name: subregion
+
+      - name: locations
+        description: "One row per OpenAQ monitoring station near a capital."
+        columns:
+          - name: location_id
+          - name: name
+          - name: locality
+          - name: country_name
+          - name: capital_name     # the capital this station is scoped to -> used as "city"
+          - name: capital_cca2
+          - name: latitude
+          - name: longitude
+          - name: is_monitor
+
+      - name: sensors
+        description: "One row per sensor at a location (one pollutant per sensor)."
+        columns:
+          - name: sensor_id
+          - name: location_id
+          - name: parameter_name
+          - name: parameter_units
+
+      - name: measurements_daily
+        description: "One row per sensor per day: OpenAQ's own daily aggregate stats."
+        columns:
+          - name: sensor_id
+          - name: date_utc
+          - name: value_avg
+          - name: value_min
+          - name: value_max
+          - name: parameter_name
+          - name: parameter_units
+          - name: expected_count
+          - name: observed_count
+          - name: percent_complete   # 0-100 scale, confirmed from real data
