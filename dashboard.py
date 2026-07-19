@@ -355,7 +355,7 @@ else:
             )],
             sliders=[dict(
                 active=len(months) - 1,
-                steps=[dict(method="animate", label="",
+                steps=[dict(method="animate", label=m,
                             args=[[m], {"frame": {"duration": 0, "redraw": True},
                                         "mode": "immediate"}]) for m in months],
                 x=0.16, len=0.81, y=-0.10, xanchor="left",
