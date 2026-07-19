@@ -11,7 +11,7 @@ st.set_page_config(page_title="Global Air Quality Monitor", layout="wide")
 
 # ---- DB connection ----
 @st.cache_resource
-def get_connection():
+def _connect():
     return psycopg2.connect(
         host=os.getenv("POSTGRES_HOST"),
         port=os.getenv("POSTGRES_PORT"),
@@ -19,6 +19,19 @@ def get_connection():
         user=os.getenv("POSTGRES_USER"),
         password=os.getenv("POSTGRES_PASSWORD"),
     )
+
+
+def get_connection():
+    """Return a live connection, reconnecting if Postgres restarted."""
+    c = _connect()
+    try:
+        with c.cursor() as cur:
+            cur.execute("SELECT 1")
+        return c
+    except (psycopg2.InterfaceError, psycopg2.OperationalError):
+        # cached connection is dead (e.g. the database container restarted)
+        _connect.clear()
+        return _connect()
 
 conn = get_connection()
 
@@ -113,9 +126,6 @@ def get_available_countries():
 countries = get_available_countries()
 selected_countries = st.sidebar.multiselect("Country", countries, default=[])
 
-parameters = get_available_parameters()
-default_pollutant_idx = parameters.index("pm25") if "pm25" in parameters else 0
-map_pollutant = st.sidebar.selectbox("Pollutant (map)", parameters, index=default_pollutant_idx)
 
 date_range = st.sidebar.date_input(
     "Date range",
@@ -153,8 +163,7 @@ st.caption(f"Showing {len(filtered_alerts):,} of {len(alerts_df):,} alert record
 
 st.divider()
 st.subheader("🗺️ Global Air Quality Map")
-st.caption("Average pollution by capital city — dot colour and size show the level. "
-           "Controlled by the Pollutant filter in the sidebar.")
+st.caption("Average pollution by capital city — dot colour and size show the level")
 
 LAND = "rgb(233, 225, 205)"
 OCEAN = "rgb(160, 200, 225)"
@@ -169,7 +178,10 @@ def get_engine():
     db = os.getenv("POSTGRES_DB", "air_quality")
     user = os.getenv("POSTGRES_USER", "postgres")
     pw = os.getenv("POSTGRES_PASSWORD", "")
-    return create_engine(f"postgresql://{user}:{pw}@{host}:{port}/{db}")
+    return create_engine(
+        f"postgresql://{user}:{pw}@{host}:{port}/{db}",
+        pool_pre_ping=True,   # test a pooled connection before use; replaces dead ones
+    )
 
 
 @st.cache_data
@@ -219,8 +231,15 @@ def map_geo_layout():
     )
 
 
-map_view = st.radio("Map view", ["All-time average", "Monthly explorer"],
-                    horizontal=True, key="map_view")
+map_col1, map_col2 = st.columns([1, 1])
+with map_col1:
+    parameters = get_available_parameters()
+    default_pollutant_idx = parameters.index("pm25") if "pm25" in parameters else 0
+    map_pollutant = st.selectbox("Pollutant", parameters,
+                                 index=default_pollutant_idx, key="map_pollutant")
+with map_col2:
+    map_view = st.radio("Map view", ["All-time average", "Monthly explorer"],
+                        horizontal=True, key="map_view")
 
 unit = "µg/m³"
 
