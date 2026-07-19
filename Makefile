@@ -1,7 +1,7 @@
 # ITC 6050 Group 1 — Air Quality Monitor
 # One-command operations for the whole stack
 
-.PHONY: help setup up down restart logs ps clean pipeline dbt-run dbt-test dashboard psql
+.PHONY: help setup up down restart logs ps clean pipeline dbt-seed dbt-run dbt-test dashboard psql
 
 help:  ## Show this help
 	@echo "Available commands:"
@@ -37,7 +37,10 @@ clean:  ## Stop everything and DELETE all data (use with caution)
 pipeline:  ## Run the ingestion pipeline
 	docker compose run --rm pipeline
 
-dbt-run:  ## Run dbt models
+dbt-seed:  ## Load dbt seed files (reference data)
+	docker compose run --rm dbt seed
+
+dbt-run: dbt-seed  ## Load seeds, then run dbt models
 	docker compose run --rm dbt run
 
 dbt-test:  ## Run dbt tests
